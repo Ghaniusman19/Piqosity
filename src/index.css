@@ -18,3 +18,22 @@
 .p-multiselect-header {
   color: black;
 }
+
+
+/* 
+ <MultiSelect
+                                                            value={selectedQuestion[e.id] || []} onChange={(ev) => {
+                                                                const selected = ev.value;
+                                                                setSelectedQuestion(prev => ({
+                                                                    ...prev,
+                                                                    [e.id]: selected
+                                                                }));
+                                                                handleTopics(selected);
+                                                            }}
+                                                            options={courses_1}
+                                                            optionLabel="title"
+                                                            optionValue='id'
+                                                            placeholder="Select Questions"
+                                                            // maxSelectedLabels={3}
+                                                            className=" p-3 bg-white w-full border border-gray-400 rounded-lg" />
+*/
