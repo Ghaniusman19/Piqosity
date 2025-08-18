@@ -5,6 +5,7 @@
 :root {
   background: url("/public/piqosity-background.c10fbb54b8a6c182.png");
   background-repeat: no-repeat;
+  background-size: cover;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -14,11 +15,11 @@
   background: white;
   position: unset;
   z-index: unset;
+  min-width: unset;
 }
 .p-multiselect-header {
   color: black;
 }
-
 
 /* 
  <MultiSelect

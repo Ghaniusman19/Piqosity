@@ -376,7 +376,6 @@ const TestBuilder = () => {
                     </div>
                 </div>
                 <div className='tb-right rounded-lg'>
-
                     {addSection.length === 0 ?
                         ("No added  topics section here ") : (<div className='p-2 bg-white rounded-lg'>
                             here the data of the topics rendered...
@@ -385,12 +384,9 @@ const TestBuilder = () => {
                                     <li className='p-2 text-[#26a69a] border border-gray-200 rounded-md mb-1' key={tp.id}>  {stripHtml(tp.name)} </li>
                                 ))}
                             </ul>
-
-                        </div>)}
-
+                    </div>)}
                 </div>
             </div>
-
         </div>
     )
 }

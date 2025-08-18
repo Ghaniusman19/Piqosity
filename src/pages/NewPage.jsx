@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { MultiSelect } from 'primereact/multiselect';
-
 const NewPage = () => {
     const [selectedQuestion, setSelectedQuestion] = useState(null)
     const [activeSection, setActiveSection] = useState(null); // For tab functionality
@@ -11,7 +10,7 @@ const NewPage = () => {
     // Section-specific API states - each section has its own data
     const [sectionCourses, setSectionCourses] = useState({}); // Store courses_1 for each section
     const [sectionTopics, setSectionTopics] = useState({}); // Store topics for each section
-    const [sectionSelectedQuestions, setSectionSelectedQuestions] = useState({}); // Store selected questions for each section
+    const [sectionSelectedQuestions, setSectionSelectedQuestions] = useState({}); // Store selected questions for each 
     // Form state for adding new sections
     const [formData, setFormData] = useState({
         title: "",
