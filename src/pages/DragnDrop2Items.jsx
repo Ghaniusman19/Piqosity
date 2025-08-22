@@ -1,0 +1,100 @@
+// import { useState } from "react";
+
+// export default function DragnDrop2Items() {
+//     const LEFT = "left";
+//     const RIGHT = "right";
+//     const [items, setItems] = useState([
+//         { id: 1, group: LEFT, value: "Item 1" },
+//         { id: 2, group: LEFT, value: "Item 2" },
+//         { id: 3, group: LEFT, value: "Item 3" },
+//         { id: 4, group: LEFT, value: "Item 4" },
+//     ]);
+
+//     // Store dragged item id (number)
+//     const handleDragStart = (e, id) => {
+//         e.dataTransfer.setData("text/plain", String(id));
+//     };
+
+//     const allowDrop = (e) => {
+//         e.preventDefault(); // required to allow drop
+//     };
+//     const handleDrop = (e, targetGroup) => {
+//         e.preventDefault();
+//         const idStr = e.dataTransfer.getData("text/plain");
+//         if (!idStr) return;
+//         const id = Number(idStr);
+//         setItems((prev) =>
+//             prev.map((it) => (it.id === id ? { ...it, group: targetGroup } : it))
+//         );
+//         console.log(items)
+//     };
+
+//     return (
+//         <div className="flex gap-4">
+//             <div
+//                 className="w-1/2 p-4 border"
+//                 onDragOver={allowDrop}
+//                 onDrop={(e) => handleDrop(e, LEFT)}
+//             >
+//                 <h3>Left </h3>
+//                 {items
+//                     .filter((it) => it.group === LEFT)
+//                     .map((it) => (
+//                         <div
+//                             key={it.id}
+//                             draggable
+//                             onDragStart={(e) => handleDragStart(e, it.id)}
+//                             className="p-2 mb-2 bg-white cursor-move"
+//                         >
+//                             <p className="bg-white border border-gray-400 rounded-lg p-2"> {it.value} || ID is : {it.id} </p>
+//                         </div>
+//                     ))}
+//             </div>
+
+//             <div
+//                 className="w-1/2 p-4 border"
+//                 onDragOver={allowDrop}
+//                 onDrop={(e) => handleDrop(e, RIGHT)}
+//             >
+//                 <h3>Right </h3>
+//                 {items
+//                     .filter((it) => it.group === RIGHT)
+//                     .map((it) => (
+//                         <div
+//                             key={it.id}
+//                             draggable
+//                             onDragStart={(e) => handleDragStart(e, it.id)}
+//                             className="p-2 mb-2 bg-white cursor-move"
+//                         >
+//                             <p className="bg-white border border-gray-400 rounded-lg p-2"> {it.value} || {it.id} </p>
+//                         </div>
+//                     ))}
+//             </div>
+//         </div>
+//     );
+// }
+import Select from 'react-select';
+const colourOptions = [
+    { value: 'ocean', label: 'Ocean', color: '#00B8D9' },
+    { value: 'blue', label: 'Blue', color: '#0052CC' },
+    { value: 'purple', label: 'Purple', color: '#5243AA' },
+    { value: 'red', label: 'Red', color: '#FF5630' },
+    { value: 'orange', label: 'Orange', color: '#FF8B00' },
+    { value: 'yellow', label: 'Yellow', color: '#FFC400' },
+    { value: 'green', label: 'Green', color: '#36B37E' },
+    { value: 'forest', label: 'Forest', color: '#00875A' },
+    { value: 'slate', label: 'Slate', color: '#253858' },
+    { value: 'silver', label: 'Silver', color: '#666666' },
+]
+const DragnDrop2Items = () => {
+    return (
+        <Select
+            isMulti
+            name="options"
+            options={colourOptions}
+            className="basic-multi-select"
+            classNamePrefix="select"
+        />
+    )
+};
+export default DragnDrop2Items;

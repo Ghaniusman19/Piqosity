@@ -7,6 +7,9 @@ import Test from './pages/Test'
 import DND from './pages/DND'
 import TestDnd from './pages/TestDnd'
 import One from './pages/one'
+import MockTester from './pages/MockTester'
+import DragnDrop3Items from './pages/DragnDrop3Items'
+import DragnDrop2Items from './pages/DragnDrop2Items'
 function App() {
   return (
     <div>
@@ -18,7 +21,9 @@ function App() {
         <Route path='dnd' element={< DND />} />
         <Route path='testdnd' element={<TestDnd />} />
         <Route path='one' element={<One />} />
-
+        <Route path='mock' element={<MockTester />} />
+        <Route path='dragndrop3' element={<DragnDrop3Items />} />
+        <Route path='dragndrop2' element={<DragnDrop2Items />} />
       </Routes>
     </div>
   )
