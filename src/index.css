@@ -69,7 +69,67 @@
   border: 2px green;
   cursor: not-allowed;
 }
-
+.p-multiselect {
+  border: 1px solid #26a29a;
+  padding: 5px;
+  border-radius: 10px;
+}
+.p-multiselect-filter-container {
+  padding: 0px;
+  border: 1px solid #26a29a;
+  border-radius: 10px;
+}
+.p-checkbox-input {
+  color: green;
+  border: 1px solid red;
+}
+.p-checkbox {
+  display: flex;
+  gap: 3px;
+}
+.p-multiselect-item {
+  color: #26a29a;
+}
+.p-checkbox-box svg {
+  color: gray;
+}
+.p-multiselect-items {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.p-multiselect-filter-container svg {
+  position: absolute;
+  right: 5px;
+  color: gray;
+}
+.p-multiselect-filter {
+  outline: #26a29a;
+}
+.p-multiselect-header {
+  padding: 5px;
+}
+.p-paginator-page {
+  /* background-color: #26a29a */
+  padding: 10px;
+  margin: 10px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+}
+.p-highlight {
+  background-color: gray;
+}
+.p-paginator-prev,
+.p-paginator-next {
+  background-color: teal;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+}
 /* 
  <MultiSelect
                                                             value={selectedQuestion[e.id] || []} onChange={(ev) => {

@@ -73,28 +73,64 @@
 //         </div>
 //     );
 // }
-import Select from 'react-select';
-const colourOptions = [
-    { value: 'ocean', label: 'Ocean', color: '#00B8D9' },
-    { value: 'blue', label: 'Blue', color: '#0052CC' },
-    { value: 'purple', label: 'Purple', color: '#5243AA' },
-    { value: 'red', label: 'Red', color: '#FF5630' },
-    { value: 'orange', label: 'Orange', color: '#FF8B00' },
-    { value: 'yellow', label: 'Yellow', color: '#FFC400' },
-    { value: 'green', label: 'Green', color: '#36B37E' },
-    { value: 'forest', label: 'Forest', color: '#00875A' },
-    { value: 'slate', label: 'Slate', color: '#253858' },
-    { value: 'silver', label: 'Silver', color: '#666666' },
-]
-const DragnDrop2Items = () => {
+// import Select from 'react-select';
+// const colourOptions = [
+//     { value: 'ocean', label: 'Ocean', color: '#00B8D9' },
+//     { value: 'blue', label: 'Blue', color: '#0052CC' },
+//     { value: 'purple', label: 'Purple', color: '#5243AA' },
+//     { value: 'red', label: 'Red', color: '#FF5630' },
+//     { value: 'orange', label: 'Orange', color: '#FF8B00' },
+//     { value: 'yellow', label: 'Yellow', color: '#FFC400' },
+//     { value: 'green', label: 'Green', color: '#36B37E' },
+//     { value: 'forest', label: 'Forest', color: '#00875A' },
+//     { value: 'slate', label: 'Slate', color: '#253858' },
+//     { value: 'silver', label: 'Silver', color: '#666666' },
+// ]
+// const DragnDrop2Items = () => {
+//     return (
+//         <Select
+//             isMulti
+//             name="options"
+//             options={colourOptions}
+//             className="basic-multi-select"
+//             classNamePrefix="select"
+//         />
+//     )
+// };
+// export default DragnDrop2Items;
+
+
+// import React, { useState } from "react";
+// import { MultiSelect } from 'primereact/multiselect';
+
+// export default function FilterDemo() {
+//     const [selectedCities, setSelectedCities] = useState(null);
+//     const cities = [
+//         { name: 'New York', code: 'NY' },
+//         { name: 'Rome', code: 'RM' },
+//         { name: 'London', code: 'LDN' },
+//         { name: 'Istanbul', code: 'IST' },
+//         { name: 'Paris', code: 'PRS' }
+//     ];
+
+//     return (
+//         <div className="card flex justify-content-center">
+//             <MultiSelect value={selectedCities} onChange={(e) => setSelectedCities(e.value)} options={cities} optionLabel="name"
+//                 filter filterDelay={400} placeholder="Select Cities" maxSelectedLabels={3} className="w-full md:w-20rem" />
+//         </div>
+//     );
+// }
+import React, { useState } from "react";
+import { Paginator } from 'primereact/paginator';
+export default function LayoutDemo() {
+    const [first, setFirst] = useState(0);
+    const onPageChange = (event) => {
+        setFirst(event.first);
+    };
     return (
-        <Select
-            isMulti
-            name="options"
-            options={colourOptions}
-            className="basic-multi-select"
-            classNamePrefix="select"
-        />
-    )
-};
-export default DragnDrop2Items;
+        <div className="card">
+            <Paginator first={first} rows={10} totalRecords={1000} onPageChange={onPageChange} template={{ layout: 'PrevPageLink CurrentPageReport NextPageLink' }} />
+        </div>
+    );
+}
+
