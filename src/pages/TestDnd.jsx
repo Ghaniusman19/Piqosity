@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MultiSelect } from 'primereact/multiselect';
 import { Paginator } from 'primereact/paginator';
 // import Select from 'react-select';
@@ -57,6 +57,23 @@ function TestDnd() {
         ));
 
         // Fetch the first page with the new page size
+        handleCourseData(currentValues, tabId, 0, rows);
+    }
+    const handlePassageShowChange = (e) => {
+        const value = e.target.value;
+
+        const rows = Number(value) || 10;
+        const tabId = Number(activeTab);
+        const currentValues = tabList.find(t => t.id === tabId)?.formData?.QuestionSource || [];
+
+        // Update per-tab passage pagination settings and reset to first page
+        setTabList(prev => prev.map(tab =>
+            tab.id === tabId
+                ? { ...tab, formData: { ...tab.formData, passageRows: rows, passageFirst: 0 } }
+                : tab
+        ));
+
+        // Fetch the first page for passages with the new page size
         handleCourseData(currentValues, tabId, 0, rows);
     }
     //Code for Drag and Drop Functionality
@@ -209,12 +226,12 @@ function TestDnd() {
                 passage25: 25,
             }
         }
-        setTabList([...tabList, newTab]);
+        setTabList(prev => [...prev, newTab]);
         setActiveTab(newTab.id.toString()); // make it string for eventKey
     };
     //This is the remove functionality of whether the targeted id is equal to that id is not
     const removeTab = (id) => {
-        setTabList(tabList.filter((i) => i.id !== id))
+        setTabList(prev => prev.filter((i) => i.id !== id));
     }
     const handleInputChange = (id, fieldname, val) => {
         setTabList((prevTabs) =>
@@ -278,6 +295,7 @@ function TestDnd() {
     }
     //This is the function which fetches the course topics based on the course id...
     const handleCourseChange = async (id) => {
+        console.log('handleCourseChange called with id:', id, 'activeTab:', activeTab, 'current tabList length:', tabList.length);
         try {
             const response = await fetch(
                 `https://api.natsent.com/api/v1/commons/test_builders/get_course_topics?id=${id}`,
@@ -293,23 +311,42 @@ function TestDnd() {
             const data = await response.json();
             console.log(data.data)
             setCourses_1(data.data || []);
-            console.log(courses_1)
+            console.log('courses_1 fetched:', data.data ? data.data.length : 0);
+
+            // If course changed while on the first tab, clear all other tabs so user must recreate them
+            const tabId = Number(activeTab);
+            if (tabId === 0) {
+                setTabList(prev => {
+                    const first = prev[0] || { id: 0, name: 'Tab 0', formData: {} };
+                    const updatedFirst = { ...first, formData: { ...first.formData, course: id } };
+                    return [updatedFirst];
+                });
+                setActiveTab(0);
+            } else {
+                // Otherwise update only the current tab's course
+                setTabList(prev => prev.map(tab => tab.id === tabId ? { ...tab, formData: { ...tab.formData, course: id } } : tab));
+            }
         } catch (error) {
             console.error("handleCourseChange error:", error);
         }
     };
+
+    // Debug: log tabList when it changes to trace unexpected removals
+    useEffect(() => {
+        console.log('tabList updated (debug):', tabList.map(t => ({ id: t.id, name: t.name, course: t.formData?.course })));
+    }, [tabList]);
     const onQuestionsPageChange = (event, tabId) => {
         // event.first (start) and event.rows (page size)
         const values = tabList.find(t => t.id === tabId)?.formData?.QuestionSource || [];
-        handleCourseData(values, tabId, event.first, event.rows);
+        handleCourseData(values, tabId, event.first, event.rows, search);
     };
     const onPassagePageChange = (event, tabId) => {
         // event.first (start) and event.rows (page size)
         const values = tabList.find(t => t.id === tabId)?.formData?.QuestionSource || [];
-        handleCourseData(values, tabId, event.first, event.rows);
+        handleCourseData(values, tabId, event.first, event.rows, search);
     };
     //This is the function used to fetch the question data based on the selected question source and renders at the right div of the each tab...
-    const handleCourseData = async (values, tabId, start = 0, length = 10) => {
+    const handleCourseData = useCallback(async (values, tabId, start = 0, length = 10, searchStr = "") => {
         console.log("selected values");
         try {
             console.log("question try code");
@@ -322,7 +359,7 @@ function TestDnd() {
                         authorization:
                             "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
                     },
-                    body: JSON.stringify({ ids: values, length, start }),
+                    body: JSON.stringify({ ids: values, length, start, search: searchStr }),
                 }
             );
             const data = await response.json();
@@ -341,6 +378,7 @@ function TestDnd() {
                                 questionsFirst: start,
                                 questionsRows: length,
                                 questionsTotal: total,
+                                lastSearch: searchStr,
                             }
                         }
                         : tab
@@ -361,7 +399,7 @@ function TestDnd() {
                         authorization:
                             "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
                     },
-                    body: JSON.stringify({ ids: values, length, start }),
+                    body: JSON.stringify({ ids: values, length, start, search: searchStr }),
                 }
             );
             const data = await response.json();
@@ -379,6 +417,7 @@ function TestDnd() {
                                 passageFirst: start,
                                 passageRows: length,
                                 passageTotal: total,
+                                lastSearch: searchStr,
                             }
                         }
                         : tab
@@ -404,7 +443,7 @@ function TestDnd() {
         } catch (error) {
             console.log(error)
         }
-    }
+    }, [tabList]);
     // const searchQuestions = async (search, values, tabId) => {
     //     console.log("searched....")
     //     try {
@@ -445,12 +484,35 @@ function TestDnd() {
     useEffect(() => {
         getCourse();
     }, [])
+    // Debounced search: when `search` or `activeTab` changes, fetch filtered results
+    useEffect(() => {
+        const tabId = Number(activeTab);
+        const values = tabList.find(t => t.id === tabId)?.formData?.QuestionSource || [];
+        const rows = tabList.find(t => t.id === tabId)?.formData?.questionsRows || 10;
+
+        // reset paging to first page for this tab
+        setTabList(prev => prev.map(tab => tab.id === tabId ? { ...tab, formData: { ...tab.formData, questionsFirst: 0, passageFirst: 0 } } : tab));
+
+        const term = (search || "").trim();
+        const timer = setTimeout(() => {
+            handleCourseData(values, tabId, 0, rows, term);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [search, activeTab, handleCourseData, tabList]);
     // This is the Code / Function which is used to handle the contributor data fetch....
     const handleContributer = async () => {
         console.log("handle Contributer")
     }
     //ye line ya find method hame array me se pehle object return krta hai jo condition ko match krta hai..
     const activeTabData = tabList.find((t) => t.id.toString() === activeTab);
+    // client-side filtered lists for instant search UX
+    const filterBySearch = (items = [], term = "") => {
+        const s = (term || "").toLowerCase().trim();
+        if (!s) return items;
+        return items.filter(it => (it.name || "").toLowerCase().includes(s));
+    };
+    const filteredQuestions = filterBySearch(activeTabData?.formData?.questions || [], search);
+    const filteredPassages = filterBySearch(activeTabData?.formData?.passages || [], search);
     const difficulty = [1, 2, 3, 4, 5, 6, 7, 8, 9]
     const BreakMinutes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
     return (
@@ -594,7 +656,6 @@ function TestDnd() {
                                                         value={tab.formData.tabName}
                                                         onChange={(e) => handleInputChange(tab.id, "tabName", e.target.value)}
                                                     />
-
                                                     <select
                                                         className="border border-gray-300 rounded-lg px-3 py-2 w-full mb-3 text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
                                                         value={tab.formData.multiTopics}
@@ -603,28 +664,7 @@ function TestDnd() {
                                                         <option value="multiTopics">Multi Topics</option>
                                                         <option value="Break">Break</option>
                                                     </select>
-
                                                     {tab.formData.multiTopics !== "Break" ? (
-                                                        // <select
-                                                        //     className="border border-gray-300 rounded-lg px-3 py-2 w-full mb-3 text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                                                        //     value={tab.formData.QuestionSource || []}
-                                                        //     multiple
-                                                        //     onChange={(e) => {
-                                                        //         let values = Array.from(e.target.selectedOptions, (opt) => opt.value);
-                                                        //         handleInputChange(tab.id, "QuestionSource", values);
-                                                        //         handleCourseData(values, tab.id);
-                                                        //         if (errors.questionSource) setErrors(prev => ({ ...prev, questionSource: null }));
-
-                                                        //     }}
-                                                        // >
-                                                        //     <option value="">Question Sources</option>
-                                                        //     {courses_1.map((course, id) => (
-                                                        //         <option key={id} className="text-black" value={course.id}>
-
-                                                        //             {course.title}
-                                                        //         </option>
-                                                        //     ))}
-                                                        // </select>
                                                         <MultiSelect
                                                             value={tab.formData.QuestionSource || []}
                                                             onChange={(e) => {
@@ -672,7 +712,6 @@ function TestDnd() {
                                             <button
                                                 className="w-full bg-[#26a69a] hover:bg-[#47bbab] text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-200"
                                                 onClick={() => setAdvanceModal(!advanceModal)}
-
                                             > Advance Section Formatting
                                             </button>
 
@@ -829,7 +868,7 @@ function TestDnd() {
                                 className="mb-3"
                             >
                                 <Tab eventKey="questions" title="questions">
-                                    {activeTabData?.formData.questions?.length > 0 ? (
+                                    {filteredQuestions?.length > 0 ? (
                                         <div className="question_main">
                                             <div className="flex justify-between items-center bg-white shadow-md rounded-xl p-4">
                                                 {/* Show dropdown */}
@@ -849,6 +888,7 @@ function TestDnd() {
                                                         <option value="50">50</option>
                                                         <option value="100">100</option>
                                                     </select>
+                                                    <span>entries</span>
                                                 </div>
 
                                                 {/* Search box */}
@@ -875,37 +915,45 @@ function TestDnd() {
                                                 onDrop={(e) => handleDrop(e, activeTab)}
 
                                             >
-                                                {activeTabData.formData.questions.map((q) => (
+                                                {filteredQuestions.map((q, index) => (
                                                     <li
                                                         key={q.id}
                                                         draggable
                                                         onDragStart={(e) => handleDragStart(e, q.id, activeTab, 'questions')}
                                                         className="flex items-center justify-between text-[#26a69a] gap-3 p-3 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all bg-white"
                                                     >
+                                                        <div className="flex justify-between gap-2 items-center">
+                                                            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-[#26a69a] font-semibold">
+                                                                {index + 1}
+                                                            </span>
+                                                            <p className="text-[#26a69a] font-medium">
 
-                                                        <p className="text-[#26a69a] font-medium"> {stripHtml(q.name)}  </p>
+                                                                {stripHtml(q.name)}  </p>
+                                                        </div>
+
                                                         <p><span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{q.difficulty} &#9878; </span> <span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{q.evad} <span className='text-amber-400'>&#63;</span> </span> </p>
                                                     </li>
                                                 ))}
                                             </ul>
+                                            <div className="card">
+                                                <Paginator
+                                                    first={activeTabData.formData.questionsFirst || 0}
+                                                    rows={activeTabData.formData.questionsRows || 10}
+                                                    totalRecords={activeTabData.formData.questionsTotal || 0}
+                                                    onPageChange={(e) => onQuestionsPageChange(e, activeTabData.id)}
+                                                // template="PrevPageLink PageLinks NextPageLink RowsPerPageDropdown"
+                                                // rowsPerPageOptions={[5, 10, 20]}
+                                                />
+                                            </div>
                                         </div>
                                     ) : (
                                         <p className="mt-3 text-center text-sm text-[#26a69a] italic bg-gray-50 border border-dashed border-gray-300 rounded-lg py-2 px-3 shadow-sm">
                                             No Record Found
                                         </p>)}
-                                    <div className="card">
-                                        <Paginator
-                                            first={activeTabData.formData.questionsFirst || 0}
-                                            rows={activeTabData.formData.questionsRows || 10}
-                                            totalRecords={activeTabData.formData.questionsTotal || 0}
-                                            onPageChange={(e) => onQuestionsPageChange(e, activeTabData.id)}
-                                        // template="PrevPageLink PageLinks NextPageLink RowsPerPageDropdown"
-                                        // rowsPerPageOptions={[5, 10, 20]}
-                                        />
-                                    </div>
+
                                 </Tab>
                                 <Tab eventKey="passage" title="passage">
-                                    {activeTabData?.formData.passages?.length > 0 ? (
+                                    {filteredPassages?.length > 0 ? (
                                         <div className="passage_main">
                                             <div className="flex justify-between items-center bg-white shadow-md rounded-xl p-4">
                                                 {/* Show dropdown */}
@@ -916,12 +964,15 @@ function TestDnd() {
                                                     <select
                                                         name="show"
                                                         id="show"
+                                                        onChange={handlePassageShowChange}
                                                         className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                     >
                                                         <option value="10">10</option>
-                                                        <option value="20">20</option>
-                                                        <option value="30">30</option>
+                                                        <option value="25">25</option>
+                                                        <option value="50">50</option>
+                                                        <option value="100">100</option>
                                                     </select>
+                                                    <span>entries</span>
                                                 </div>
 
                                                 {/* Search box */}
@@ -943,7 +994,7 @@ function TestDnd() {
                                                 </div>
                                             </div>
                                             <ul className="space-y-3 mt-4">
-                                                {activeTabData.formData.passages.map((p, index) => (
+                                                {filteredPassages.map((p, index) => (
                                                     <li
                                                         key={p.id}
                                                         draggable
@@ -1014,17 +1065,7 @@ function TestDnd() {
                             </Tabs>
                                 : "No input yet"
                             }
-                            {/* <div
-                                onDragOver={allowDrop}
-                                onDrop={(e) => handleDrop(e, activeTab)}
-                            >
-                                {activeTabData?.formData?.questions?.map((qq) => (
-                                    <p className='bg-yellow-200'
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, qq.id)} >{qq.name}</p>
-                                ))
-                                }
-                            </div> */}
+
                         </div>
                     )
                     }
