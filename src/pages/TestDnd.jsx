@@ -20,16 +20,18 @@ function TestDnd() {
     const [search, setSearch] = useState("")
     const [expandedPassage, setExpandedPassage] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
-    const [advanceModal, setAdvanceModal] = useState(false);
+    // which tab's advance modal is open (null means closed)
+    const [advanceModalTab, setAdvanceModalTab] = useState(null);
     const [tabList, setTabList] = useState([
         {
             id: 0,
-            name: `Tab ${0}`,
+            name: `All Sections `,
             formData: {
                 title: "",
                 course: " ",
-                private: " ",
-                locked: " ",
+                visibility: " ",
+                islocked: " ",
+                isFLT: false,
                 // tabName: " ",
                 // multiTopics: " ",
                 // QuestionSource: [],
@@ -208,14 +210,14 @@ function TestDnd() {
             name: tabList.length,
             group: LEFT,
             formData: {
-                tabName: " ", multiTopics: " ",
+                tabName: '',
+                multiTopics: " ",
                 QuestionSource: [],
                 break: " ",
                 questions: [],
                 passages: [],
                 droppedQuestions: [],
                 droppedPassages: [],
-                // inside newTab.formData
                 questionsFirst: 0,    // first index (start)
                 questionsRows: 10,    // page size (length)
                 questionsTotal: 0,    // total records (filled by API)
@@ -232,6 +234,16 @@ function TestDnd() {
     //This is the remove functionality of whether the targeted id is equal to that id is not
     const removeTab = (id) => {
         setTabList(prev => prev.filter((i) => i.id !== id));
+        //   yaha condition lagi hwi hai k agar apka tab closed ho jae to previously tab active ho jae na k kuch bhi na show ho...
+        if (id == activeTab) {
+            const closedTabIndex = tabList.findIndex(tab => tab.id === id);
+            let newActiveTabId = null;
+            if (tabList.length > 0) {
+                newActiveTabId = closedTabIndex > 0 ? tabList[closedTabIndex - 1]?.id : tabList[0]?.id;
+            }
+            setActiveTab(newActiveTabId)
+        }
+
     }
     const handleInputChange = (id, fieldname, val) => {
         setTabList((prevTabs) =>
@@ -247,10 +259,10 @@ function TestDnd() {
     // This is the button functionality on which whole tab data is to be submitted...
     const handleOverAllSubmit = (e) => {
         e.preventDefault();
-
         const firstTab = tabList?.[0];
+        const secondTab = tabList?.[1];
         const firstTitle = firstTab?.formData?.title || "";
-        const firstQuestionSource = firstTab?.formData?.QuestionSource || [];
+        const firstQuestionSource = secondTab?.formData?.QuestionSource || [];
 
         const newErrors = {};
 
@@ -259,15 +271,13 @@ function TestDnd() {
         }
 
         // If multiTopics is not Break, QuestionSource must be selected
-        if ((firstTab?.formData?.multiTopics || "") !== "Break" && (!Array.isArray(firstQuestionSource) || firstQuestionSource.length === 0)) {
+        if ((firstTab?.formData?.multiTopics || "") !== "Break" && (!Array.isArray(firstQuestionSource) || firstQuestionSource.length == 0)) {
             newErrors.questionSource = "Please select at least one Question Source";
         }
-
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
             return; // block submit
         }
-
         setErrors({});
         // continue with submit
         console.log(tabList);
@@ -332,9 +342,7 @@ function TestDnd() {
     };
 
     // Debug: log tabList when it changes to trace unexpected removals
-    useEffect(() => {
-        console.log('tabList updated (debug):', tabList.map(t => ({ id: t.id, name: t.name, course: t.formData?.course })));
-    }, [tabList]);
+
     const onQuestionsPageChange = (event, tabId) => {
         // event.first (start) and event.rows (page size)
         const values = tabList.find(t => t.id === tabId)?.formData?.QuestionSource || [];
@@ -345,137 +353,48 @@ function TestDnd() {
         const values = tabList.find(t => t.id === tabId)?.formData?.QuestionSource || [];
         handleCourseData(values, tabId, event.first, event.rows, search);
     };
-    //This is the function used to fetch the question data based on the selected question source and renders at the right div of the each tab...
+    //This is the function used to fetch the question & passage data for a tab. Kept stable with empty deps.
     const handleCourseData = useCallback(async (values, tabId, start = 0, length = 10, searchStr = "") => {
-        console.log("selected values");
+        console.log("handleCourseData", { values, tabId, start, length, searchStr });
+        // fetch questions
         try {
-            console.log("question try code");
-            const response = await fetch(
-                "https://api.natsent.com/api/v1/commons/test_builders/get_all_questions",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        authorization:
-                            "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
-                    },
-                    body: JSON.stringify({ ids: values, length, start, search: searchStr }),
-                }
-            );
-            const data = await response.json();
-            const items = data.data.data || [];
-            const total = data.data.total_count || data?.data?.count || items.length;
-
-            console.log(data.data)
-            setTabList(prevTabs =>
-                prevTabs.map(tab =>
-                    tab.id === tabId
-                        ? {
-                            ...tab,
-                            formData: {
-                                ...tab.formData,
-                                questions: items,
-                                questionsFirst: start,
-                                questionsRows: length,
-                                questionsTotal: total,
-                                lastSearch: searchStr,
-                            }
-                        }
-                        : tab
-                )
-            );
-            console.log(tabList, "new date picked")
-        } catch (error) {
-            console.log(error)
+            const respQ = await fetch("https://api.natsent.com/api/v1/commons/test_builders/get_all_questions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", authorization: "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8" },
+                body: JSON.stringify({ ids: values, length, start, search: searchStr })
+            });
+            const dataQ = await respQ.json();
+            const itemsQ = dataQ?.data?.data || [];
+            const totalQ = dataQ?.data?.total_count || dataQ?.data?.count || itemsQ.length;
+            setTabList(prev => prev.map(tab => tab.id === tabId ? { ...tab, formData: { ...tab.formData, questions: itemsQ, questionsFirst: start, questionsRows: length, questionsTotal: totalQ, lastSearch: searchStr } } : tab));
+        } catch (err) {
+            console.error('handleCourseData questions error', err);
         }
+
         try {
-            console.log("passage try code");
-            const response = await fetch(
-                "https://api.natsent.com/api/v1/commons/test_builders/get_all_passages",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        authorization:
-                            "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
-                    },
-                    body: JSON.stringify({ ids: values, length, start, search: searchStr }),
-                }
-            );
-            const data = await response.json();
-            const items = data.data.data || [];
-            const total = data.data.total_count || data?.data?.count || items.length;
-            console.log(data.data)
-            setTabList(prevTabs =>
-                prevTabs.map(tab =>
-                    tab.id === tabId
-                        ? {
-                            ...tab, formData:
-                            {
-                                ...tab.formData,
-                                passages: items,
-                                passageFirst: start,
-                                passageRows: length,
-                                passageTotal: total,
-                                lastSearch: searchStr,
-                            }
-                        }
-                        : tab
-                )
-            );
-        } catch (error) {
-            console.log(error)
+            const respP = await fetch("https://api.natsent.com/api/v1/commons/test_builders/get_all_passages", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", authorization: "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8" },
+                body: JSON.stringify({ ids: values, length, start, search: searchStr })
+            });
+            const dataP = await respP.json();
+            const itemsP = dataP?.data?.data || [];
+            const totalP = dataP?.data?.total_count || dataP?.data?.count || itemsP.length;
+            setTabList(prev => prev.map(tab => tab.id === tabId ? { ...tab, formData: { ...tab.formData, passages: itemsP, passageFirst: start, passageRows: length, passageTotal: totalP, lastSearch: searchStr } } : tab));
+        } catch (err) {
+            console.error('handleCourseData passages error', err);
         }
+
+        // fetch subtopics (optional)
         try {
-            const response = await fetch(
-                `https://api.natsent.com/api/v1/commons/test_builders/get_sub_topics_of_topics?ids=${values}`,
-                {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        authorization:
-                            "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
-                    },
-                }
-            );
-            const data = await response.json();
-            console.log(data)
-        } catch (error) {
-            console.log(error)
+            const respS = await fetch(`https://api.natsent.com/api/v1/commons/test_builders/get_sub_topics_of_topics?ids=${values}`);
+            const dataS = await respS.json();
+            console.log('sub topics', dataS);
+        } catch (err) {
+            console.log(err)
         }
-    }, [tabList]);
-    // const searchQuestions = async (search, values, tabId) => {
-    //     console.log("searched....")
-    //     try {
-    //         console.log("question try code");
-    //         const response = await fetch(
-    //             "https://api.natsent.com/api/v1/commons/test_builders/get_all_questions",
-    //             {
-    //                 method: "POST",
-    //                 headers: {
-    //                     "Content-Type": "application/json",
-    //                     authorization:
-    //                         "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
-    //                 },
-    //                 body: JSON.stringify({ search: search, ids: values }),
-    //             }
-    //         );
-    //         const data = await response.json();
-    //         console.log(data.data)
-    //         setTabList(prevTabs =>
-    //             prevTabs.map(tab =>
-    //                 tab.id === tabId
-    //                     ? { ...tab, formData: { ...tab.formData, questions: data.data.data } }
-    //                     : tab
-    //             )
-    //         );
-    //         console.log(tabList, "new date picked")
+    }, []);
 
-    //     } catch (error) {
-    //         console.log(error)
-    //     }
-
-    // }
 
     //This is the Function which is used to toggle the passage and shows the questions in that passage ...
     const togglePassage = (id) => {
@@ -490,43 +409,59 @@ function TestDnd() {
         const values = tabList.find(t => t.id === tabId)?.formData?.QuestionSource || [];
         const rows = tabList.find(t => t.id === tabId)?.formData?.questionsRows || 10;
 
-        // reset paging to first page for this tab
-        setTabList(prev => prev.map(tab => tab.id === tabId ? { ...tab, formData: { ...tab.formData, questionsFirst: 0, passageFirst: 0 } } : tab));
+        // reset paging to first page for this tab only when needed (guard to avoid infinite updates)
+        setTabList(prev => {
+            let changed = false;
+            const next = prev.map(tab => {
+                if (tab.id !== tabId) return tab;
+                const qFirst = tab.formData?.questionsFirst || 0;
+                const pFirst = tab.formData?.passageFirst || 0;
+                if (qFirst === 0 && pFirst === 0) return tab;
+                changed = true;
+                return { ...tab, formData: { ...tab.formData, questionsFirst: 0, passageFirst: 0 } };
+            });
+            return changed ? next : prev;
+        });
 
         const term = (search || "").trim();
         const timer = setTimeout(() => {
             handleCourseData(values, tabId, 0, rows, term);
         }, 400);
         return () => clearTimeout(timer);
-    }, [search, activeTab, handleCourseData, tabList]);
+        // intentionally omit `tabList` to avoid re-trigger from inner tabList updates
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search, activeTab, handleCourseData]);
     // This is the Code / Function which is used to handle the contributor data fetch....
     const handleContributer = async () => {
         console.log("handle Contributer")
+    }
+
+    // update advance modal fields for a particular tab
+    const handleAdvanceInputChange = (tabId, field, value) => {
+        setTabList(prev => prev.map(tab =>
+            tab.id === tabId
+                ? { ...tab, formData: { ...tab.formData, advance: { ...(tab.formData?.advance || {}), [field]: value } } }
+                : tab
+        ));
     }
     //ye line ya find method hame array me se pehle object return krta hai jo condition ko match krta hai..
     const activeTabData = tabList.find((t) => t.id.toString() === activeTab);
     // client-side filtered lists for instant search UX
     const filterBySearch = (items = [], term = "") => {
-        const s = (term || "").toLowerCase().trim();
-        if (!s) return items;
-        return items.filter(it => (it.name || "").toLowerCase().includes(s));
+        const search = (term || "").toLowerCase().trim();
+        if (!search) return items;
+        return items.filter(item => (item.name || "").toLowerCase().includes(search));
     };
     const filteredQuestions = filterBySearch(activeTabData?.formData?.questions || [], search);
     const filteredPassages = filterBySearch(activeTabData?.formData?.passages || [], search);
     const difficulty = [1, 2, 3, 4, 5, 6, 7, 8, 9]
     const BreakMinutes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
+    const modalTab = tabList.find(t => t.id === advanceModalTab);
+    const adv = modalTab?.formData?.advance || {};
     return (
         <>
-            {advanceModal && (
-                <div className="absolute w-full h-full z-10 ">
-                    <div className='absolute z-20 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white shadow-xl p-2 rounded-md ' >Lorem, ipsum dolor sit amet consectetur adipisicing elit. Inventore, explicabo.
-                        <button className='bg-gray-800 text-white rounded-lg border border-gray-800 p-2 '
-                            onClick={() => setAdvanceModal(false)}
-                        >close</button>
-                    </div>
-                </div>
-            )}
-            <div className="main__container">
+
+            <div className="main__container h-screen">
                 <div className="w-full flex items-center justify-between bg-white shadow-md px-6 mb-3 py-4 ">
                     <h1 className="text-2xl font-bold text-blue-900 tracking-wide">
                         Test Builder
@@ -542,34 +477,43 @@ function TestDnd() {
                 <div className='p-1 text-[#26a29a] rounded-xl border  border-gray-500 ' >
                     {errors.title && <p className="font-semibold text-sm mt-1">{errors.title}</p>}
                     {errors.questionSource && <p className="font-semibold text-sm mt-1">{errors.questionSource}</p>}
+
                 </div>
 
-                <div className='m-3 flex gap-2'>
+                <div className='m-3 flex gap-2 '>
                     <div className="left__div w-[50%] relative  ">
                         <button
-                            className="bg-blue-900 hover:bg-blue-800 text-white w-10 h-10 flex items-center justify-center 
-             rounded-full shadow-md absolute right-4 top-4 transition duration-300"
+                            className="bg-blue-900 hover:bg-blue-800 text-white w-14 h-10 flex items-center justify-center 
+              shadow-md absolute right-0 top-0 transition duration-300 z-40 rounded-t-xl "
                             onClick={addTab}
                         >
                             +
                         </button>
+
                         <Tabs
                             id="controlled-tab-example"
                             activeKey={activeTab}
                             onSelect={(k) => setActiveTab(k)}
-                            className="mb-3 bg-green-100"
+                            className=" relative"
                         >
+
                             {tabList.map((tab) => (
-                                <Tab className='relative bg-none bg-green-200' eventKey={tab.id.toString()} title={tab.id} key={tab.id}>
-                                    {tabList.length > 1 && (
+                                <Tab className='relative bg-none rounded-lg '
+                                    eventKey={tab.id.toString()}
+                                    title={tab.name}
+                                    key={tab.id}>
+                                    {tabList.length > 1 && tab.id !== 0 && (
                                         <button
-                                            onClick={() => removeTab(tab.id)}
-                                            className="  flex items-center gap-2 px-3 py-1.5  text-sm font-medium text-white bg-[#26a69a] rounded-lg shadow-md  hover:bg-[#10868f]  hover:shadow-lg  transition-all  duration-200 cursor-pointer"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                removeTab(tab.id)
+                                            }}
+                                            className=" flex items-center gap-2 px-3 py-1.5  text-sm font-medium text-white bg-[#26a69a] rounded-lg shadow-md  hover:bg-[#10868f]  hover:shadow-lg  transition-all  duration-200 cursor-pointer"
                                         >
                                             Close {tab.id}
                                         </button>
                                     )}
-                                    <div className="p-3 bg-white shadow-lg">
+                                    <div className="p-3 bg-white shadow-lg rounded-b-lg">
                                         {/* <h4 >Content of {tab.name}</h4> */}
                                         <form onSubmit={handleSubmit}
                                             className="bg-white shadow-md rounded-xl p-6 space-y-5 border border-gray-200">
@@ -617,26 +561,39 @@ function TestDnd() {
                                                     <div className="flex gap-3">
                                                         <select
                                                             className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                                                            value={tab.formData.private}
-                                                            onChange={(e) => handleInputChange(tab.id, "private", e.target.value)}
+                                                            value={tab.formData.visibility}
+                                                            onChange={(e) => handleInputChange(tab.id, "visibility", e.target.value)}
                                                         >
                                                             <option value="private">Private</option>
                                                             <option value="public">Public</option>
                                                         </select>
                                                         <select
                                                             className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                                                            value={tab.formData.locked}
-                                                            onChange={(e) => handleInputChange(tab.id, "locked", e.target.value)}
+                                                            value={tab.formData.islocked}
+                                                            onChange={(e) => handleInputChange(tab.id, "islocked", e.target.value)}
                                                         >
                                                             <option value="locked">Locked</option>
                                                             <option value="unlocked">Unlocked</option>
                                                         </select>
                                                     </div>
+                                                    <div className="checkbox full-length-test flex justify-end gap-2">
+                                                        <label htmlFor="full-length">Full Length Test</label>
+                                                        <input type="checkbox"
+                                                            className="appearance-none h-6 w-6 border border-gray-400 rounded-md checked:bg-[#26a29a] checked:border-transparent focus:outline-none focus:ring-2 focus:ring-[#26a29a] focus:ring-offset-2"
+                                                            name="full-length"
+                                                            id="full-length" onChange={(e) => handleInputChange(tab.id, "isFLT", e.target.checked)}
+
+
+                                                        />
+                                                    </div>
                                                     {/* Tab List */}
+
+
                                                     <div className="section__added">
-                                                        {tabList.length > 1 && (
-                                                            <ul className="list-disc pl-6 mt-3 space-y-2 text-blue-600">
-                                                                {tabList.map((tab) => (
+                                                        <p className='text-center '>Drag and Drop to re-arrange section below</p>
+                                                        {tabList.length && (
+                                                            <ul className=" mt-3 space-y-2 text-blue-600">
+                                                                {tabList.slice(1).map((tab) => (
                                                                     <li
                                                                         key={tab.id}
                                                                         className="px-3 py-2 text-blue-600 bg-blue-50 rounded-lg shadow-sm hover:bg-blue-100 transition duration-200 cursor-pointer"
@@ -647,13 +604,15 @@ function TestDnd() {
                                                             </ul>
                                                         )}
                                                     </div>
+
+
                                                 </div>
                                             ) : (
                                                 <>
                                                     <input
                                                         type="text"
                                                         className="border border-gray-300 rounded-lg px-3 py-2 w-full mb-3 text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none"
-                                                        value={tab.formData.tabName}
+                                                        value={tab.formData.tabName || tab.id}
                                                         onChange={(e) => handleInputChange(tab.id, "tabName", e.target.value)}
                                                     />
                                                     <select
@@ -708,103 +667,245 @@ function TestDnd() {
                                                 Submit
                                             </button>
                                         </form>
-                                        <div className="advance_section_format p-2 ">
+                                        {tab.id !== 0 && <div className="advance_section_format p-2 ">
                                             <button
                                                 className="w-full bg-[#26a69a] hover:bg-[#47bbab] text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-200"
-                                                onClick={() => setAdvanceModal(!advanceModal)}
+                                                onClick={() => setAdvanceModalTab(tab.id)}
                                             > Advance Section Formatting
                                             </button>
+                                        </div>}
 
-                                        </div>
-                                        <div
-                                            className="drag__drop w-full  border-2  mt-2 border-blue-200  rounded-2xl  bg-white hover:bg-blue-50 transition-all shadow-sm "
-                                            onDragOver={allowDrop}
-                                            onDrop={(e) => handleDrop(e, tab.id)}
-                                        >
-                                            <div className="text-center">
-                                                <p className="font-medium mb-2">Drop items here for tab {tab.id}</p>
-                                                <div className="inline-flex items-center gap-3">
-                                                    <div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
-                                                        <span className="text-sm text-gray-600">Number of Questions</span>
-                                                        <span className="bg-[#26a69a] text-white text-sm font-semibold px-2 py-0.5 rounded-full">{(tab.formData?.droppedQuestions || []).length}</span>
+                                        {advanceModalTab !== null && (
+                                            <div className="modal-overlay">
+                                                <div className=" modal-content bg-white max-w-[50%]" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="header flex justify-between items-center">
+                                                        <h3 className="text-lg font-semibold mb-4">
+                                                            Advanced Section Formatting
+                                                        </h3>
+
+                                                        <button
+                                                            className=" w-10 h-10 text-center border text-2xl text-gray-500 rounded-full"
+                                                            onClick={() => setAdvanceModalTab(null)}
+                                                        >
+                                                            &times;
+                                                        </button>
                                                     </div>
-                                                    <div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
-                                                        <span className="text-sm text-gray-600">Number of Passages</span>
-                                                        <span className="bg-[#26a69a] text-white text-sm font-semibold px-2 py-0.5 rounded-full">{(tab.formData?.droppedPassages || []).length}</span>
+
+                                                    <div className="space-y-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Directions
+                                                            </label>
+                                                            <div className="border rounded-t-md p-2 flex flex-wrap gap-2 text-gray-600 text-sm">
+                                                                <button className="hover:text-black font-bold">B</button>
+                                                                <button className="hover:text-black italic">I</button>
+                                                                <button className="hover:text-black underline">U</button>
+                                                                <button className="hover:text-black">A</button>
+                                                                <button className="hover:text-black">•</button>
+                                                                <button className="hover:text-black">1.</button>
+                                                                <button className="hover:text-black">Img</button>
+                                                                <button className="hover:text-black">Link</button>
+                                                            </div>
+                                                            <textarea
+                                                                rows={4}
+                                                                value={adv.directions || ""}
+                                                                onChange={(e) =>
+                                                                    handleAdvanceInputChange(modalTab.id, "directions", e.target.value)
+                                                                }
+                                                                placeholder="Type something"
+                                                                className="w-full border border-t-0 rounded-b-md p-2 text-sm"
+                                                                required
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Single Question Layout
+                                                            </label>
+                                                            <select
+                                                                value={adv.singleLayout || ""}
+                                                                onChange={(e) =>
+                                                                    handleAdvanceInputChange(modalTab.id, "singleLayout", e.target.value)
+                                                                }
+                                                                className="w-full border rounded p-2 text-sm"
+                                                            >
+                                                                <option>Single Column</option>
+                                                                <option>Two Column</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Passage Question Layout
+                                                            </label>
+                                                            <select
+                                                                value={adv.passageLayout || ""}
+                                                                onChange={(e) =>
+                                                                    handleAdvanceInputChange(modalTab.id, "passageLayout", e.target.value)
+                                                                }
+                                                                className="w-full border rounded p-2 text-sm"
+                                                            >
+                                                                <option>Single Column</option>
+                                                                <option>Two Column</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Calculator
+                                                            </label>
+                                                            <select
+                                                                value={adv.calculator || ""}
+                                                                onChange={(e) =>
+                                                                    handleAdvanceInputChange(modalTab.id, "calculator", e.target.value)
+                                                                }
+                                                                className="w-full border rounded p-2 text-sm"
+                                                            >
+                                                                <option>Default</option>
+                                                                <option>Scientific</option>
+                                                                <option>None</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Reference Sheet
+                                                            </label>
+                                                            <select
+                                                                value={adv.referenceSheet || ""}
+                                                                onChange={(e) =>
+                                                                    handleAdvanceInputChange(modalTab.id, "referenceSheet", e.target.value)
+                                                                }
+                                                                className="w-full border rounded p-2 text-sm"
+                                                            >
+                                                                <option>No Reference Sheet</option>
+                                                                <option>Sheet A</option>
+                                                                <option>Sheet B</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                                Allotted Time
+                                                            </label>
+                                                            <select
+                                                                value={adv.allottedTime || ""}
+                                                                onChange={(e) =>
+                                                                    handleAdvanceInputChange(modalTab.id, "allottedTime", e.target.value)
+                                                                }
+                                                                className="w-full border rounded p-2 text-sm"
+                                                            >
+                                                                <option>Default</option>
+                                                                <option>Custom</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div className="flex justify-start gap-2 pt-3 border-t">
+
+                                                            <button
+                                                                className="px-4 py-2 rounded bg-[#26a69a] text-white text-sm"
+                                                                onClick={() => setAdvanceModalTab(null)}
+                                                            >
+                                                                Submit form
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
+                                            </div>
+                                        )}
 
-                                                {tabList.length > 1 &&
-                                                    <div className="mt-3">
-                                                        <p className="font-medium mb-2">Dropped items for tab {tab.id}:</p>
-                                                        {tab.formData?.droppedQuestions && tab.formData.droppedQuestions.length > 0 ? (
-                                                            <ul className="space-y-2">
-                                                                {tab.formData.droppedQuestions.map((dq) => (
-                                                                    <li
-                                                                        key={dq.id}
-                                                                        draggable
-                                                                        onDragStart={(e) => handleDragStart(e, dq.id, tab.id, 'dropped')}
-                                                                        className="p-2 bg-gray-50 rounded-md border border-gray-200"
-                                                                    >
-                                                                        <div
-                                                                            className="flex justify-between items-center">
+                                        {tab.id !== 0 && (
+                                            <div
+                                                className="drag__drop w-full  border-2  mt-2 border-blue-200  rounded-2xl  bg-white hover:bg-blue-50 transition-all shadow-sm "
+                                                onDragOver={allowDrop}
+                                                onDrop={(e) => handleDrop(e, tab.id)}
+                                            >
+                                                <div className="text-center">
+                                                    <p className="font-medium mb-2">Drop items here for tab {tab.id}</p>
+                                                    <div className="inline-flex items-center gap-3">
+                                                        <div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
+                                                            <span className="text-sm text-gray-600">Number of Questions</span>
+                                                            <span className="bg-[#26a69a] text-white text-sm font-semibold px-2 py-0.5 rounded-full">{(tab.formData?.droppedQuestions || []).length}</span>
+                                                        </div>
+                                                        <div className="inline-flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
+                                                            <span className="text-sm text-gray-600">Number of Passages</span>
+                                                            <span className="bg-[#26a69a] text-white text-sm font-semibold px-2 py-0.5 rounded-full">{(tab.formData?.droppedPassages || []).length}</span>
+                                                        </div>
+                                                    </div>
 
-                                                                            <div className="text-sm text-gray-700">{stripHtml(dq.name)}</div>
-                                                                            <div className="text-xs text-gray-500">
-                                                                                <span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{dq.difficulty} &#9878; </span> <span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{dq.evad} &#9878; </span>  </div>
-                                                                        </div>
-                                                                    </li>
-                                                                ))}
-                                                            </ul>
-                                                        ) : (
-                                                            <p className="text-sm text-gray-400">No dropped questions</p>
-                                                        )}
-
-                                                        <div className="mt-4">
-                                                            <p className="font-medium mb-2">Dropped Passages</p>
-                                                            {tab.formData?.droppedPassages && tab.formData.droppedPassages.length > 0 ? (
+                                                    {tabList.length > 1 &&
+                                                        <div className="mt-3">
+                                                            <p className="font-medium mb-2">Dropped items for tab {tab.id}:</p>
+                                                            {tab.formData?.droppedQuestions && tab.formData.droppedQuestions.length > 0 ? (
                                                                 <ul className="space-y-2">
-                                                                    {tab.formData.droppedPassages.map((dp) => (
-                                                                        <li key={dp.id} draggable onDragStart={(e) => handleDragStart(e, dp.id, tab.id, 'droppedPassage')} className="p-2 bg-gray-50 rounded-md border border-gray-200">
-                                                                            <div className="flex justify-between items-center">
-                                                                                <div className="text-sm text-gray-700 font-medium">{stripHtml(dp.name)}</div>
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <div className="text-xs  border border-gray-600 rounded-lg p-2 text-[#26a69a] ">{dp.questions?.length || 0} Qs</div>
-                                                                                    <button className="text-sm text-gray-400" onClick={() => togglePassage(dp.id)}>{expandedPassage === dp.id ? "▲" : "▼"}</button>
-                                                                                </div>
+                                                                    {tab.formData.droppedQuestions.map((dq) => (
+                                                                        <li
+                                                                            key={dq.id}
+                                                                            draggable
+                                                                            onDragStart={(e) => handleDragStart(e, dq.id, tab.id, 'dropped')}
+                                                                            className="p-2 bg-gray-50 rounded-md border border-gray-200"
+                                                                        >
+                                                                            <div
+                                                                                className="flex justify-between items-center">
+
+                                                                                <div className="text-sm text-gray-700">{stripHtml(dq.name)}</div>
+                                                                                <div className="text-xs text-gray-500">
+                                                                                    <span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{dq.difficulty} &#9878; </span> <span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{dq.evad} &#9878; </span>  </div>
                                                                             </div>
-                                                                            {expandedPassage === dp.id && (
-                                                                                <ul className="mt-2 ml-4 space-y-2">
-                                                                                    {dp.questions?.length > 0 ? dp.questions.map((q) => (
-                                                                                        <li key={q.id} className="text-gray-600 bg-gray-50 p-2 rounded-md shadow-sm flex items-center justify-between">
-                                                                                            <p>{stripHtml(q.name)}</p>
-                                                                                            <p><span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{q.difficulty}&#9878; </span>
-                                                                                                <span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{q.evad}&#9878; </span></p>
-                                                                                        </li>
-                                                                                    )) : <li className="text-gray-400 italic">No questions in passage</li>}
-                                                                                </ul>
-                                                                            )}
                                                                         </li>
                                                                     ))}
                                                                 </ul>
                                                             ) : (
-                                                                <p className="text-sm text-gray-400">No dropped passages</p>
+                                                                <p className="text-sm text-gray-400">No dropped questions</p>
                                                             )}
-                                                        </div>
-                                                    </div>
-                                                }
 
+                                                            <div className="mt-4">
+                                                                <p className="font-medium mb-2">Dropped Passages</p>
+                                                                {tab.formData?.droppedPassages && tab.formData.droppedPassages.length > 0 ? (
+                                                                    <ul className="space-y-2">
+                                                                        {tab.formData.droppedPassages.map((dp) => (
+                                                                            <li key={dp.id} draggable onDragStart={(e) => handleDragStart(e, dp.id, tab.id, 'droppedPassage')} className="p-2 bg-gray-50 rounded-md border border-gray-200">
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <div className="text-sm text-gray-700 font-medium">{stripHtml(dp.name)}</div>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <div className="text-xs  border border-gray-600 rounded-lg p-2 text-[#26a69a] ">{dp.questions?.length || 0} Qs</div>
+                                                                                        <button className="text-sm text-gray-400" onClick={() => togglePassage(dp.id)}>{expandedPassage === dp.id ? "▲" : "▼"}</button>
+                                                                                    </div>
+                                                                                </div>
+                                                                                {expandedPassage === dp.id && (
+                                                                                    <ul className="mt-2 ml-4 space-y-2">
+                                                                                        {dp.questions?.length > 0 ? dp.questions.map((q) => (
+                                                                                            <li key={q.id} className="text-gray-600 bg-gray-50 p-2 rounded-md shadow-sm flex items-center justify-between">
+                                                                                                <p>{stripHtml(q.name)}</p>
+                                                                                                <p><span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{q.difficulty}&#9878; </span>
+                                                                                                    <span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{q.evad}&#9878; </span></p>
+                                                                                            </li>
+                                                                                        )) : <li className="text-gray-400 italic">No questions in passage</li>}
+                                                                                    </ul>
+                                                                                )}
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                ) : (
+                                                                    <p className="text-sm text-gray-400">No dropped passages</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    }
+
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
+
                                     </div>
                                 </Tab>
                             ))}
                         </Tabs>
                     </div>
                     {tabList.length > 1 && activeTab != 0 && (
-                        <div className='bg-emerald-100 w-[50%]'>
+                        <div className='bg-white rounded-lg w-[50%] h-fit'>
                             <div className="header flex justify-between items-center p-2">
-                                <p className="name font-semibold text-2xl">
+                                <p className="name font-semibold text-xl">
                                     Question
                                 </p>
                                 <button
@@ -865,9 +966,9 @@ function TestDnd() {
                                 id="controlled-tab-example"
                                 activeKey={rightTabs}
                                 onSelect={(k) => setRightTabs(k)}
-                                className="mb-3"
+                                className="mb-3 px-2"
                             >
-                                <Tab eventKey="questions" title="questions">
+                                <Tab eventKey="questions" title="questions" className='mx-2'>
                                     {filteredQuestions?.length > 0 ? (
                                         <div className="question_main">
                                             <div className="flex justify-between items-center bg-white shadow-md rounded-xl p-4">
@@ -910,10 +1011,8 @@ function TestDnd() {
                                                 </div>
                                             </div>
                                             <ul className="space-y-3 mt-4"
-
                                                 onDragOver={allowDrop}
                                                 onDrop={(e) => handleDrop(e, activeTab)}
-
                                             >
                                                 {filteredQuestions.map((q, index) => (
                                                     <li
@@ -927,10 +1026,8 @@ function TestDnd() {
                                                                 {index + 1}
                                                             </span>
                                                             <p className="text-[#26a69a] font-medium">
-
                                                                 {stripHtml(q.name)}  </p>
                                                         </div>
-
                                                         <p><span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{q.difficulty} &#9878; </span> <span className='text-[#26a69a] border border-gray-200 rounded-full p-2'>{q.evad} <span className='text-amber-400'>&#63;</span> </span> </p>
                                                     </li>
                                                 ))}
@@ -941,8 +1038,7 @@ function TestDnd() {
                                                     rows={activeTabData.formData.questionsRows || 10}
                                                     totalRecords={activeTabData.formData.questionsTotal || 0}
                                                     onPageChange={(e) => onQuestionsPageChange(e, activeTabData.id)}
-                                                // template="PrevPageLink PageLinks NextPageLink RowsPerPageDropdown"
-                                                // rowsPerPageOptions={[5, 10, 20]}
+
                                                 />
                                             </div>
                                         </div>
@@ -952,7 +1048,7 @@ function TestDnd() {
                                         </p>)}
 
                                 </Tab>
-                                <Tab eventKey="passage" title="passage">
+                                <Tab eventKey="passage" title="passage" className='mx-2'>
                                     {filteredPassages?.length > 0 ? (
                                         <div className="passage_main">
                                             <div className="flex justify-between items-center bg-white shadow-md rounded-xl p-4">
@@ -1050,8 +1146,6 @@ function TestDnd() {
                                                     rows={activeTabData.formData.passageRows || 10}
                                                     totalRecords={activeTabData.formData.passageTotal || 0}
                                                     onPageChange={(e) => onPassagePageChange(e, activeTabData.id)}
-                                                // template="PrevPageLink PageLinks NextPageLink RowsPerPageDropdown"
-                                                // rowsPerPageOptions={[5, 10, 20]}
                                                 />
                                             </div>
                                         </div>
@@ -1069,9 +1163,7 @@ function TestDnd() {
                         </div>
                     )
                     }
-
                 </div >
-
             </div>
         </>
     );

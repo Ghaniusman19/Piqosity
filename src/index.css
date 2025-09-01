@@ -3,13 +3,16 @@
 @tailwind utilities;
 
 :root {
-  background: url("/public/piqosity-background.c10fbb54b8a6c182.png");
-  background-repeat: no-repeat;
-  background-size: cover;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+.main__container {
+  background: url("/public/piqosity-background.c10fbb54b8a6c182.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  height: 100vh;
 }
 .p-component {
   background: white;
@@ -23,7 +26,24 @@
 .nav-link.active {
   background-color: aqua;
 }
+.nav-item button {
+  background-color: white;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  color: black;
+  border: unset;
+}
+.nav-item button:hover {
+  color: black;
+}
+.nav-item button.nav-link.active {
+  background-color: #26a29a;
 
+  color: black;
+}
+.tab-content {
+  border-radius: 10px;
+}
 .groups {
   display: flex;
   margin: 5px;
@@ -129,6 +149,35 @@
   border-radius: 50%;
   width: 40px;
   height: 40px;
+}
+.nav .nav-item {
+  margin-right: 5px;
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Ensure it's on top of other content */
+
+  /* Apply the blur effect to the background */
+  backdrop-filter: blur(5px); /* Adjust blur intensity as needed */
+  -webkit-backdrop-filter: blur(5px); /* For Safari compatibility */
+}
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  overflow-y: scroll;
+  white-space: nowrap;
+  position: absolute;
+  z-index: 1001; /* Ensure modal content is above the overlay */
 }
 /* 
  <MultiSelect

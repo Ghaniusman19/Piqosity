@@ -120,17 +120,75 @@
 //         </div>
 //     );
 // }
-import React, { useState } from "react";
-import { Paginator } from 'primereact/paginator';
-export default function LayoutDemo() {
-    const [first, setFirst] = useState(0);
-    const onPageChange = (event) => {
-        setFirst(event.first);
+// import React, { useState } from "react";
+// import { Paginator } from 'primereact/paginator';
+// export default function LayoutDemo() {
+//     const [first, setFirst] = useState(0);
+//     const onPageChange = (event) => {
+//         setFirst(event.first);
+//     };
+//     return (
+//         <div className="card">
+//             <Paginator first={first} rows={10} totalRecords={1000} onPageChange={onPageChange} template={{ layout: 'PrevPageLink CurrentPageReport NextPageLink' }} />
+//         </div>
+//     );
+// }
+
+
+import React, { useState } from 'react';
+function DragnDrop2Items() {
+    const [openTabs, setOpenTabs] = useState([
+        { id: 'tab1', title: 'Tab 1', content: 'Content for Tab 1' },
+        { id: 'tab2', title: 'Tab 2', content: 'Content for Tab 2' },
+    ]);
+    const [activeTabId, setActiveTabId] = useState('tab1');
+
+    const handleCloseTab = (tabIdToClose) => {
+        const updatedTabs = openTabs.filter(tab => tab.id !== tabIdToClose);
+        setOpenTabs(updatedTabs);
+
+        if (tabIdToClose === activeTabId) {
+            // Find the index of the closed tab
+            const closedTabIndex = openTabs.findIndex(tab => tab.id === tabIdToClose);
+            let newActiveTabId = null;
+
+            if (updatedTabs.length > 0) {
+                // Activate the previous tab if available, otherwise the first remaining tab
+                newActiveTabId = closedTabIndex > 0 ? updatedTabs[closedTabIndex - 1]?.id : updatedTabs[0]?.id;
+            }
+            setActiveTabId(newActiveTabId);
+        }
     };
+
     return (
-        <div className="card">
-            <Paginator first={first} rows={10} totalRecords={1000} onPageChange={onPageChange} template={{ layout: 'PrevPageLink CurrentPageReport NextPageLink' }} />
+        <div>
+            {/* Tab Headers */}
+            <div className="tab-headers">
+                {openTabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTabId(tab.id)}
+                        className={activeTabId === tab.id ? 'active' : ''}
+                    >
+                        {tab.title}
+                        <span onClick={(e) => { e.stopPropagation(); handleCloseTab(tab.id); }}>x</span>
+                    </button>
+                ))}
+            </div>
+
+            {/* Tab Content */}
+            <div className="tab-content">
+                {openTabs.map(tab => (
+                    <div
+                        key={tab.id}
+                        style={{ display: activeTabId === tab.id ? 'block' : 'none' }}
+                    >
+                        {tab.content}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }
 
+export default DragnDrop2Items;
