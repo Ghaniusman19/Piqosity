@@ -135,60 +135,106 @@
 // }
 
 
-import React, { useState } from 'react';
-function DragnDrop2Items() {
-    const [openTabs, setOpenTabs] = useState([
-        { id: 'tab1', title: 'Tab 1', content: 'Content for Tab 1' },
-        { id: 'tab2', title: 'Tab 2', content: 'Content for Tab 2' },
-    ]);
-    const [activeTabId, setActiveTabId] = useState('tab1');
+// import React, { useState } from 'react';
+// function DragnDrop2Items() {
+//     const [openTabs, setOpenTabs] = useState([
+//         { id: 'tab1', title: 'Tab 1', content: 'Content for Tab 1' },
+//         { id: 'tab2', title: 'Tab 2', content: 'Content for Tab 2' },
+//     ]);
+//     const [activeTabId, setActiveTabId] = useState('tab1');
 
-    const handleCloseTab = (tabIdToClose) => {
-        const updatedTabs = openTabs.filter(tab => tab.id !== tabIdToClose);
-        setOpenTabs(updatedTabs);
+//     const handleCloseTab = (tabIdToClose) => {
+//         const updatedTabs = openTabs.filter(tab => tab.id !== tabIdToClose);
+//         setOpenTabs(updatedTabs);
 
-        if (tabIdToClose === activeTabId) {
-            // Find the index of the closed tab
-            const closedTabIndex = openTabs.findIndex(tab => tab.id === tabIdToClose);
-            let newActiveTabId = null;
+//         if (tabIdToClose === activeTabId) {
+//             // Find the index of the closed tab
+//             const closedTabIndex = openTabs.findIndex(tab => tab.id === tabIdToClose);
+//             let newActiveTabId = null;
 
-            if (updatedTabs.length > 0) {
-                // Activate the previous tab if available, otherwise the first remaining tab
-                newActiveTabId = closedTabIndex > 0 ? updatedTabs[closedTabIndex - 1]?.id : updatedTabs[0]?.id;
-            }
-            setActiveTabId(newActiveTabId);
-        }
+//             if (updatedTabs.length > 0) {
+//                 // Activate the previous tab if available, otherwise the first remaining tab
+//                 newActiveTabId = closedTabIndex > 0 ? updatedTabs[closedTabIndex - 1]?.id : updatedTabs[0]?.id;
+//             }
+//             setActiveTabId(newActiveTabId);
+//         }
+//     };
+
+//     return (
+//         <div>
+//             {/* Tab Headers */}
+//             <div className="tab-headers">
+//                 {openTabs.map(tab => (
+//                     <button
+//                         key={tab.id}
+//                         onClick={() => setActiveTabId(tab.id)}
+//                         className={activeTabId === tab.id ? 'active' : ''}
+//                     >
+//                         {tab.title}
+//                         <span onClick={(e) => { e.stopPropagation(); handleCloseTab(tab.id); }}>x</span>
+//                     </button>
+//                 ))}
+//             </div>
+
+//             {/* Tab Content */}
+//             <div className="tab-content">
+//                 {openTabs.map(tab => (
+//                     <div
+//                         key={tab.id}
+//                         style={{ display: activeTabId === tab.id ? 'block' : 'none' }}
+//                     >
+//                         {tab.content}
+//                     </div>
+//                 ))}
+//             </div>
+//         </div>
+//     );
+// }
+
+// export default DragnDrop2Items;
+
+import React, { useState, useRef } from 'react';
+
+function CustomDragAndDropList() {
+    const [items, setItems] = useState(['Item A', 'Item B', 'Item C', 'Item D']);
+    const dragItem = useRef();
+    const dragOverItem = useRef();
+
+    const handleDragStart = (e, index) => {
+        dragItem.current = index;
+    };
+
+    const handleDragEnter = (e, index) => {
+        dragOverItem.current = index;
+    };
+
+    const handleDragEnd = () => {
+        const newItems = [...items];
+        const draggedItemContent = newItems[dragItem.current];
+        newItems.splice(dragItem.current, 1);
+        newItems.splice(dragOverItem.current, 0, draggedItemContent);
+        setItems(newItems);
+        dragItem.current = null;
+        dragOverItem.current = null;
     };
 
     return (
-        <div>
-            {/* Tab Headers */}
-            <div className="tab-headers">
-                {openTabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTabId(tab.id)}
-                        className={activeTabId === tab.id ? 'active' : ''}
-                    >
-                        {tab.title}
-                        <span onClick={(e) => { e.stopPropagation(); handleCloseTab(tab.id); }}>x</span>
-                    </button>
-                ))}
-            </div>
-
-            {/* Tab Content */}
-            <div className="tab-content">
-                {openTabs.map(tab => (
-                    <div
-                        key={tab.id}
-                        style={{ display: activeTabId === tab.id ? 'block' : 'none' }}
-                    >
-                        {tab.content}
-                    </div>
-                ))}
-            </div>
+        <div className="list-container">
+            {items.map((item, index) => (
+                <div
+                    key={item}
+                    className="list-item"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragEnter={(e) => handleDragEnter(e, index)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => e.preventDefault()}
+                >
+                    {item}
+                </div>
+            ))}
         </div>
     );
 }
 
-export default DragnDrop2Items;
+export default CustomDragAndDropList;
