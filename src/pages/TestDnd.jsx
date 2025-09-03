@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { MultiSelect } from "primereact/multiselect";
 import { Paginator } from "primereact/paginator";
+import AdvanceModal from "../components/AdvanceModal";
 import "primeicons/primeicons.css";
+import { difficulty, BreakMinutes, AUTH_TOKEN } from "../constants/constants";
 // import Select from 'react-select';
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
@@ -338,7 +340,7 @@ function TestDnd() {
                 QuestionSource: [],
                 subTopics: [],
                 QuestionSourcefilter: activeTabData?.formData?.QuestionSource || [],
-                QuestionSourcefilter1: [],
+                // QuestionSourcefilter1: [],
                 contributors: "",
                 break: " ",
                 questions: [],
@@ -427,7 +429,7 @@ function TestDnd() {
                     headers: {
                         "Content-Type": "application/json",
                         authorization:
-                            "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
+                            AUTH_TOKEN,
                     },
                     body: JSON.stringify({
                         course_id: tabList[0]?.formData?.course,
@@ -461,7 +463,7 @@ function TestDnd() {
                     headers: {
                         "Content-Type": "application/json",
                         authorization:
-                            "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
+                            AUTH_TOKEN,
                     },
                 }
             );
@@ -490,7 +492,7 @@ function TestDnd() {
                     headers: {
                         "Content-Type": "application/json",
                         authorization:
-                            "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
+                            AUTH_TOKEN,
                     },
                 }
             );
@@ -540,7 +542,7 @@ function TestDnd() {
     };
     //This is the function used to fetch the question & passage data for a tab. Kept stable with empty deps.
     const handleCourseData = useCallback(
-        async (values, tabId, start = 0, length = 10, author, searchStr = " ") => {
+        async (values, tabId, start = 0, length = 10, searchStr = " ", author) => {
             console.log("handleCourseData", {
                 values,
                 tabId,
@@ -558,7 +560,7 @@ function TestDnd() {
                         headers: {
                             "Content-Type": "application/json",
                             authorization:
-                                "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
+                                AUTH_TOKEN,
                         },
                         body: JSON.stringify({
                             ids: values,
@@ -601,7 +603,7 @@ function TestDnd() {
                         headers: {
                             "Content-Type": "application/json",
                             authorization:
-                                "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
+                                AUTH_TOKEN,
                         },
                         body: JSON.stringify({
                             ids: values,
@@ -636,30 +638,9 @@ function TestDnd() {
             } catch (err) {
                 console.error("handleCourseData passages error", err);
             }
-            // fetch subtopics of topics....
-            // try {
-
-            //     const respS = await fetch(
-            //         `https://api.natsent.com/api/v1/commons/test_builders/get_sub_topics_of_topics?ids=${values}`,
-            //         {
-            //             method: "GET",
-            //             headers: {
-            //                 "Content-Type": "application/json",
-            //                 authorization:
-            //                     "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
-            //             }
-            //         }
-
-            //     );
-            //     const dataSubTopics = await respS.json();
-            //     console.log("sub topics", dataSubTopics);
-            // } catch (err) {
-            //     console.log(err);
-            // }
         },
         []
     );
-
     //This is the Function which is used to toggle the passage and shows the questions in that passage ...
     const togglePassage = (id) => {
         setExpandedPassage(expandedPassage === id ? null : id);
@@ -700,9 +681,7 @@ function TestDnd() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [search, activeTab, handleCourseData]);
     // This is the Code / Function which is used to handle the contributor data fetch....
-    // const handleContributer = async () => {
-    //     console.log("handle Contributer");
-    // };
+
     // update advance modal fields for a particular tab
     const handleAdvanceInputChange = (tabId, field, value) => {
         setTabList((prev) =>
@@ -738,11 +717,7 @@ function TestDnd() {
         activeTabData?.formData?.passages || [],
         search
     );
-    const difficulty = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    const BreakMinutes = [
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-        22, 23, 24, 25, 26, 27, 28, 29, 30,
-    ];
+
     const modalTab = tabList.find((t) => t.id === advanceModalTab);
     const adv = modalTab?.formData?.advance || {};
     const errorLength = Object.keys(errors).length;
@@ -769,6 +744,7 @@ function TestDnd() {
 
     const fetchTopics = async (id) => {
         console.log("fetch Topics called", id);
+
         // so you pass id as a parameter in the fetchTopics function to make it dynamic on the basis of question Sources.......
         //%5B%22 %22%5D
         // so this is the static ids just to check the functionality of the sub topics fetch....
@@ -780,7 +756,7 @@ function TestDnd() {
                     headers: {
                         "Content-Type": "application/json",
                         authorization:
-                            "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
+                            AUTH_TOKEN,
                     },
                 }
             );
@@ -801,7 +777,7 @@ function TestDnd() {
                     headers: {
                         "Content-Type": "application/json",
                         authorization:
-                            "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
+                            AUTH_TOKEN,
                     },
                 }
             );
@@ -821,7 +797,6 @@ function TestDnd() {
                         Test Builder
                     </h1>
                     <button
-                        // onClick={() => console.log("submit")}
                         onClick={handleOverAllSubmit}
                         className="bg-blue-900 text-white font-semibold px-6 py-2 rounded-lg shadow hover:bg-blue-800 transition-all duration-300"
                     >
@@ -1135,179 +1110,15 @@ function TestDnd() {
                                             </div>
                                         )}
 
-                                        {advanceModalTab !== null && (
-                                            <div className="modal-overlay">
-                                                <div
-                                                    className=" modal-content bg-white max-w-[50%] overflow-y-scroll h-[80%] "
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <div className="header flex justify-between items-center">
-                                                        <h3 className="text-lg font-semibold mb-4">
-                                                            Advanced Section Formatting
-                                                        </h3>
-
-                                                        <button
-                                                            className=" w-10 h-10 text-center border text-2xl text-gray-500 rounded-full"
-                                                            onClick={() => setAdvanceModalTab(null)}
-                                                        >
-                                                            &times;
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="space-y-4">
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                Directions
-                                                            </label>
-                                                            <div className="border rounded-t-md p-2 flex flex-wrap gap-2 text-gray-600 text-sm">
-                                                                <button className="hover:text-black font-bold">
-                                                                    B
-                                                                </button>
-                                                                <button className="hover:text-black italic">
-                                                                    I
-                                                                </button>
-                                                                <button className="hover:text-black underline">
-                                                                    U
-                                                                </button>
-                                                                <button className="hover:text-black">A</button>
-                                                                <button className="hover:text-black">•</button>
-                                                                <button className="hover:text-black">1.</button>
-                                                                <button className="hover:text-black">
-                                                                    Img
-                                                                </button>
-                                                                <button className="hover:text-black">
-                                                                    Link
-                                                                </button>
-                                                            </div>
-                                                            <textarea
-                                                                rows={4}
-                                                                value={adv.directions || ""}
-                                                                onChange={(e) =>
-                                                                    handleAdvanceInputChange(
-                                                                        modalTab.id,
-                                                                        "directions",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                placeholder="Type something"
-                                                                className="w-full border border-t-0 rounded-b-md p-2 text-sm"
-                                                                required
-                                                            />
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                Single Question Layout
-                                                            </label>
-                                                            <select
-                                                                value={adv.singleLayout || ""}
-                                                                onChange={(e) =>
-                                                                    handleAdvanceInputChange(
-                                                                        modalTab.id,
-                                                                        "singleLayout",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                className="w-full border rounded p-2 text-sm"
-                                                            >
-                                                                <option>Single Column</option>
-                                                                <option>Two Column</option>
-                                                            </select>
-                                                        </div>
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                Passage Question Layout
-                                                            </label>
-                                                            <select
-                                                                value={adv.passageLayout || ""}
-                                                                onChange={(e) =>
-                                                                    handleAdvanceInputChange(
-                                                                        modalTab.id,
-                                                                        "passageLayout",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                className="w-full border rounded p-2 text-sm"
-                                                            >
-                                                                <option>Single Column</option>
-                                                                <option>Two Column</option>
-                                                            </select>
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                Calculator
-                                                            </label>
-                                                            <select
-                                                                value={adv.calculator || ""}
-                                                                onChange={(e) =>
-                                                                    handleAdvanceInputChange(
-                                                                        modalTab.id,
-                                                                        "calculator",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                className="w-full border rounded p-2 text-sm"
-                                                            >
-                                                                <option>Default</option>
-                                                                <option>Scientific</option>
-                                                                <option>None</option>
-                                                            </select>
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                Reference Sheet
-                                                            </label>
-                                                            <select
-                                                                value={adv.referenceSheet || ""}
-                                                                onChange={(e) =>
-                                                                    handleAdvanceInputChange(
-                                                                        modalTab.id,
-                                                                        "referenceSheet",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                className="w-full border rounded p-2 text-sm"
-                                                            >
-                                                                <option>No Reference Sheet</option>
-                                                                <option>Sheet A</option>
-                                                                <option>Sheet B</option>
-                                                            </select>
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                                Allotted Time
-                                                            </label>
-                                                            <select
-                                                                value={adv.allottedTime || ""}
-                                                                onChange={(e) =>
-                                                                    handleAdvanceInputChange(
-                                                                        modalTab.id,
-                                                                        "allottedTime",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                className="w-full border rounded p-2 text-sm"
-                                                            >
-                                                                <option>Default</option>
-                                                                <option>Custom</option>
-                                                            </select>
-                                                        </div>
-
-                                                        <div className="flex justify-start gap-2 pt-3 border-t">
-                                                            <button
-                                                                className="px-4 py-2 rounded bg-[#26a69a] text-white text-sm"
-                                                                onClick={() => setAdvanceModalTab(null)}
-                                                            >
-                                                                Submit form
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        {advanceModalTab && (
+                                            <AdvanceModal
+                                                adv={adv}
+                                                modalTab={modalTab}
+                                                handleAdvanceInputChange={handleAdvanceInputChange}
+                                                setAdvanceModalTab={setAdvanceModalTab}
+                                            />
                                         )}
+
 
                                         {tab.id !== 0 && (
                                             <div
