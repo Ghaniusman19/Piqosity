@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { MultiSelect } from "primereact/multiselect";
 import { Paginator } from "primereact/paginator";
-import 'primeicons/primeicons.css';
+import "primeicons/primeicons.css";
 // import Select from 'react-select';
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
@@ -12,7 +12,8 @@ function TestDnd() {
         return doc.body.textContent || "";
     };
     //All States of the file
-    // const [payLoadSections , setPayLoadSections] = useState([])
+    const [subTpoics, setSubTopics] = useState([]);
+    const [contributors, setContributors] = useState([]);
     const [errors, setErrors] = useState({});
     const [showPage, setShowPage] = useState("");
     const [activeTab, setActiveTab] = useState(0);
@@ -34,19 +35,9 @@ function TestDnd() {
                 visibility: " ",
                 islocked: " ",
                 isFLT: false,
-                // tabName: " ",
-                // multiTopics: " ",
-                // QuestionSource: [],
-                // break: " ",
-                // questions: [],
-                // passages: [],
-                // droppedQuestions: [],
-                // droppedPassages: []
             },
         },
     ]);
-    // const [sectionAddedDnd, setSectionAddedDnd] = useState([])
-
 
     const handleShowChange = (e) => {
         const value = e.target.value;
@@ -118,7 +109,7 @@ function TestDnd() {
         } catch {
             void 0;
         }
-        console.log("dragstart ->", payload);
+        console.log("dragstart", payload);
     };
     const allowDrop = (e) => {
         e.preventDefault(); // required to allow drop
@@ -218,7 +209,6 @@ function TestDnd() {
                             },
                         };
                     }
-
                     // questions
                     const q = tab.formData?.questions || [];
                     const qi = q.findIndex((x) => String(x.id) === idStr);
@@ -232,7 +222,6 @@ function TestDnd() {
                             },
                         };
                     }
-
                     // passages
                     const p = tab.formData?.passages || [];
                     const pi = p.findIndex((x) => String(x.id) === idStr);
@@ -246,7 +235,6 @@ function TestDnd() {
                             },
                         };
                     }
-
                     // droppedPassages
                     const dp = tab.formData?.droppedPassages || [];
                     const dpi = dp.findIndex((x) => String(x.id) === idStr);
@@ -288,7 +276,6 @@ function TestDnd() {
             // add to target: restore to original list if coming from dropped, otherwise add to dropped lists
             return removed.map((tab) => {
                 if (String(tab.id) !== String(targetTabId)) return tab;
-
                 // questions
                 if (originType === "dropped" || originType === "questions") {
                     if (originType === "dropped") {
@@ -313,7 +300,6 @@ function TestDnd() {
                         };
                     }
                 }
-
                 // passages
                 if (originType === "droppedPassage" || originType === "passage") {
                     if (originType === "droppedPassage") {
@@ -336,7 +322,6 @@ function TestDnd() {
                         };
                     }
                 }
-
                 return tab;
             });
         });
@@ -351,6 +336,10 @@ function TestDnd() {
                 tabName: "",
                 multiTopics: " ",
                 QuestionSource: [],
+                subTopics: [],
+                QuestionSourcefilter: activeTabData?.formData?.QuestionSource || [],
+                QuestionSourcefilter1: [],
+                contributors: "",
                 break: " ",
                 questions: [],
                 passages: [],
@@ -369,17 +358,15 @@ function TestDnd() {
         setTabList((prev) => [...prev, newTab]);
         setActiveTab(newTab.id.toString()); // make it string for eventKey
     };
-    const payLoadData = tabList.slice(1).map(item => (
-        {
-            index: item.id,
-            section_name: item?.formData?.tabName || " ",
-            topics_ids: item?.formData?.QuestionSource || " ",
-            question_ids: item?.formData?.droppedQuestions || " ",
-            alloted_time: item?.formData?.advance?.allottedTime || " ",
-            calculator: item?.formData?.advance?.calculator || " ",
-            direction: item?.formData?.advance?.directions || " ",
-        }
-    ))
+    const payLoadData = tabList.slice(1).map((item) => ({
+        index: item.id,
+        section_name: item?.formData?.tabName || " ",
+        topics_ids: item?.formData?.QuestionSource || " ",
+        question_ids: item?.formData?.droppedQuestions || " ",
+        alloted_time: item?.formData?.advance?.allottedTime || " ",
+        calculator: item?.formData?.advance?.calculator || " ",
+        direction: item?.formData?.advance?.directions || " ",
+    }));
     //This is the remove functionality of whether the targeted id is equal to that id is not
     const removeTab = (id) => {
         setTabList((prev) => prev.filter((i) => i.id !== id));
@@ -414,13 +401,10 @@ function TestDnd() {
         const secondTab = tabList?.[1];
         const firstTitle = firstTab?.formData?.title || "";
         const firstQuestionSource = secondTab?.formData?.QuestionSource || [];
-
         const newErrors = {};
-
         if (!firstTitle.trim()) {
             newErrors.title = "Title for first tab is required";
         }
-
         // If multiTopics is not Break, QuestionSource must be selected
         if (
             (firstTab?.formData?.multiTopics || "") !== "Break" &&
@@ -435,9 +419,9 @@ function TestDnd() {
         setErrors({});
         // continue with submit
         console.log(tabList);
-
         try {
-            const response = await fetch("https://api.natsent.com/api/v1/commons/test_builders",
+            const response = await fetch(
+                "https://api.natsent.com/api/v1/commons/test_builders",
                 {
                     method: "POST",
                     headers: {
@@ -452,21 +436,19 @@ function TestDnd() {
                             builder_flt: tabList[0]?.formData?.isFLT,
                             is_locked: tabList[0]?.formData?.islocked,
                             name: tabList[0]?.formData?.title,
-                            sections:
-                                payLoadData
-                            ,
+                            sections: payLoadData,
                             visibility: tabList[0]?.formData?.visibility,
-                        }
+                        },
                         // length,
                         // start,
                         // search: searchStr,
                     }),
                 }
-            )
+            );
             const data = await response.json();
-            console.log(data)
+            console.log(data);
         } catch (error) {
-            console.log(error)
+            console.log(error);
         }
     };
     // This is the function which fetches the course data from the API...
@@ -543,9 +525,7 @@ function TestDnd() {
             console.error("handleCourseChange error:", error);
         }
     };
-
     // Debug: log tabList when it changes to trace unexpected removals
-
     const onQuestionsPageChange = (event, tabId) => {
         // event.first (start) and event.rows (page size)
         const values =
@@ -560,12 +540,13 @@ function TestDnd() {
     };
     //This is the function used to fetch the question & passage data for a tab. Kept stable with empty deps.
     const handleCourseData = useCallback(
-        async (values, tabId, start = 0, length = 10, searchStr = "") => {
+        async (values, tabId, start = 0, length = 10, author, searchStr = " ") => {
             console.log("handleCourseData", {
                 values,
                 tabId,
                 start,
                 length,
+                author,
                 searchStr,
             });
             // fetch questions
@@ -584,6 +565,7 @@ function TestDnd() {
                             length,
                             start,
                             search: searchStr,
+                            author,
                         }),
                     }
                 );
@@ -611,7 +593,6 @@ function TestDnd() {
             } catch (err) {
                 console.error("handleCourseData questions error", err);
             }
-
             try {
                 const respP = await fetch(
                     "https://api.natsent.com/api/v1/commons/test_builders/get_all_passages",
@@ -627,6 +608,7 @@ function TestDnd() {
                             length,
                             start,
                             search: searchStr,
+                            author,
                         }),
                     }
                 );
@@ -654,14 +636,23 @@ function TestDnd() {
             } catch (err) {
                 console.error("handleCourseData passages error", err);
             }
-
-            // fetch subtopics (optional)
+            // fetch subtopics of topics....
             // try {
+
             //     const respS = await fetch(
-            //         `https://api.natsent.com/api/v1/commons/test_builders/get_sub_topics_of_topics?ids=${values}`
+            //         `https://api.natsent.com/api/v1/commons/test_builders/get_sub_topics_of_topics?ids=${values}`,
+            //         {
+            //             method: "GET",
+            //             headers: {
+            //                 "Content-Type": "application/json",
+            //                 authorization:
+            //                     "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
+            //             }
+            //         }
+
             //     );
-            //     const dataS = await respS.json();
-            //     console.log("sub topics", dataS);
+            //     const dataSubTopics = await respS.json();
+            //     console.log("sub topics", dataSubTopics);
             // } catch (err) {
             //     console.log(err);
             // }
@@ -683,7 +674,6 @@ function TestDnd() {
             tabList.find((t) => t.id === tabId)?.formData?.QuestionSource || [];
         const rows =
             tabList.find((t) => t.id === tabId)?.formData?.questionsRows || 10;
-
         // reset paging to first page for this tab only when needed (guard to avoid infinite updates)
         setTabList((prev) => {
             let changed = false;
@@ -710,10 +700,9 @@ function TestDnd() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [search, activeTab, handleCourseData]);
     // This is the Code / Function which is used to handle the contributor data fetch....
-    const handleContributer = async () => {
-        console.log("handle Contributer");
-    };
-
+    // const handleContributer = async () => {
+    //     console.log("handle Contributer");
+    // };
     // update advance modal fields for a particular tab
     const handleAdvanceInputChange = (tabId, field, value) => {
         setTabList((prev) =>
@@ -732,6 +721,7 @@ function TestDnd() {
     };
     //ye line ya find method hame array me se pehle object return krta hai jo condition ko match krta hai..
     const activeTabData = tabList.find((t) => t.id.toString() === activeTab);
+
     // client-side filtered lists for instant search UX
     const filterBySearch = (items = [], term = "") => {
         const search = (term || "").toLowerCase().trim();
@@ -776,6 +766,53 @@ function TestDnd() {
         dragItem.current = null;
         dragOverItem.current = null;
     };
+
+    const fetchTopics = async (id) => {
+        console.log("fetch Topics called", id);
+        // so you pass id as a parameter in the fetchTopics function to make it dynamic on the basis of question Sources.......
+        //%5B%22 %22%5D
+        // so this is the static ids just to check the functionality of the sub topics fetch....
+        try {
+            const response = await fetch(
+                `https://api.natsent.com/api/v1/commons/test_builders/get_sub_topics_of_topics?ids=%5B%227d2a1786-b61f-4ba6-a6bf-a65dc7738bb5%22,%22fe05a404-dd34-4097-842e-94cc2a644b17%22,%22cba42ec7-9d90-4792-9a39-a185169a1dde%22,%2295a6965e-eb22-4a5b-8c22-39bd5e6d98a9%22,%223cef49c5-d190-420c-a38a-e3a813be40c5%22,%225b556b9f-f15a-4cff-b490-90865b1be4b6%22%5D`,
+                {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        authorization:
+                            "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
+                    },
+                }
+            );
+            const dataSubTopics = await response.json();
+            console.log("sub topics are ", dataSubTopics.data);
+            setSubTopics(dataSubTopics.data);
+
+            // setSubTopics(dataSubTopics.data || []);
+        } catch (err) {
+            console.log(err);
+        }
+
+        try {
+            const response = await fetch(
+                `https://api.natsent.com/api/v1/commons/test_builders/get_all_contributors?ids=%5B%227d2a1786-b61f-4ba6-a6bf-a65dc7738bb5%22,%22fe05a404-dd34-4097-842e-94cc2a644b17%22,%22cba42ec7-9d90-4792-9a39-a185169a1dde%22,%2295a6965e-eb22-4a5b-8c22-39bd5e6d98a9%22,%223cef49c5-d190-420c-a38a-e3a813be40c5%22,%225b556b9f-f15a-4cff-b490-90865b1be4b6%22%5D`,
+                {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        authorization:
+                            "eyJhbGciOiJIUzI1NiJ9.eyJ0cnVlX3VzZXJfaWQiOm51bGwsInVzZXJfaWQiOiJiN2UyOGZjOS04YmExLTRjZWUtYWZlYS0yOTFjYTE1MmYyNmQiLCJleHAiOjE3ODU5MTk0MDd9.UI12IbbjeYpt3x6gJ2Z-nX3QRL9SoQLLvx4soiI4Hb8",
+                    },
+                }
+            );
+            const contributors = await response.json();
+            console.log("contributors", contributors.data);
+            setContributors(contributors.data);
+        } catch (err) {
+            console.log(err);
+        }
+    };
+
     return (
         <>
             <div className="main__container h-screen">
@@ -835,29 +872,19 @@ function TestDnd() {
                                         <>
                                             {tab.name}
                                             {tab.id !== 0 && (
-                                                <i className="pi pi-times cursor-pointer text-xs "
+                                                <i
+                                                    className="pi pi-times cursor-pointer text-xs "
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         removeTab(tab.id);
-                                                    }}>
-                                                </i>
+                                                    }}
+                                                ></i>
                                             )}
                                         </>
                                     }
                                     // title={tab.name}
                                     key={tab.id}
                                 >
-                                    {/* {tabList.length > 1 && tab.id !== 0 && (
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                removeTab(tab.id);
-                                            }}
-                                            className=" absolute flex items-center gap-2 px-3 py-1.5  text-sm font-medium text-white bg-[#26a69a] rounded-lg shadow-md  hover:bg-[#10868f]  hover:shadow-lg  transition-all  duration-200 cursor-pointer"
-                                        >
-                                            Close {tab.id}
-                                        </button>
-                                    )} */}
                                     <div className="p-3 bg-white shadow-lg rounded-b-lg ">
                                         {/* <h4 >Content of {tab.name}</h4> */}
                                         <form
@@ -991,8 +1018,12 @@ function TestDnd() {
                                                                         key={tab.id}
                                                                         className="px-3 py-2 text-blue-600 bg-blue-50 rounded-lg shadow-sm hover:bg-blue-100 transition duration-200 cursor-pointer"
                                                                         draggable
-                                                                        onDragStart={(e) => handleDragstart(e, index + 1)}
-                                                                        onDragEnter={(e) => handleDragEnter(e, index + 1)}
+                                                                        onDragStart={(e) =>
+                                                                            handleDragstart(e, index + 1)
+                                                                        }
+                                                                        onDragEnter={(e) =>
+                                                                            handleDragEnter(e, index + 1)
+                                                                        }
                                                                         onDragEnd={handleDragEnd}
                                                                         onDragOver={(e) => e.preventDefault()}
                                                                     >
@@ -1183,7 +1214,6 @@ function TestDnd() {
                                                                 <option>Two Column</option>
                                                             </select>
                                                         </div>
-
                                                         <div>
                                                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                                                 Passage Question Layout
@@ -1290,7 +1320,6 @@ function TestDnd() {
                                                         {/* Drop items here for tab {tab.id} */}
                                                         Drag and Drop to re-arrange question/passage below
                                                     </p>
-
 
                                                     {tabList.length > 1 && (
                                                         <div className="mt-3 min-h-20">
@@ -1447,7 +1476,21 @@ function TestDnd() {
                             <div className="header flex justify-between items-center p-2">
                                 <p className="name font-semibold text-xl">Question</p>
                                 <button
-                                    onClick={() => setIsOpen(!isOpen)}
+                                    onClick={() => {
+                                        setIsOpen(!isOpen);
+                                        // Get the current active tab's question source IDs
+                                        // const currentTab = tabList.find(tab => tab.id === activeTab);
+                                        const questionSourceIds =
+                                            activeTabData?.formData?.QuestionSource || [];
+
+                                        if (questionSourceIds.length >= 0) {
+                                            fetchTopics(questionSourceIds);
+                                            console.log(questionSourceIds);
+                                        } else {
+                                            console.log("No question sources selected for this tab");
+                                            // You can show an alert or notification here
+                                        }
+                                    }}
                                     className="flex items-center gap-2 px-4 py-2 relative rounded-xl bg-gray-100 text-[#26a69a] font-medium shadow-sm hover:bg-[#26a69a] hover:text-white transition duration-200"
                                 >
                                     <span className="text-2xl"> &#x2617;</span>
@@ -1466,18 +1509,83 @@ function TestDnd() {
                                             </select>
                                         </div>
                                         <div className="mb-4">
-                                            <select className="w-full border rounded-lg px-3 py-2 text-sm text-gray-700 shadow-sm focus:ring-2 focus:ring-[#26169a] focus:outline-none">
-                                                <option value="">Select a Subtopic...</option>
-                                                <option value="option1">Subtopic 1</option>
-                                                <option value="option2">Subtopic 2</option>
-                                            </select>
+                                            <MultiSelect
+                                                value={activeTabData.formData.QuestionSourcefilter || []}
+                                                onChange={(e) => {
+                                                    const values = Array.isArray(e.value) ? e.value : [];
+                                                    handleInputChange(
+                                                        activeTabData.id,
+                                                        "QuestionSourcefilter1",
+                                                        values
+                                                    );
+                                                    // fetch first page
+                                                    const rows =
+                                                        activeTabData.formData.questionsRows || 10;
+                                                    handleCourseData(values, activeTabData.id, 0, rows);
+                                                    if (errors.questionSource)
+                                                        setErrors((prev) => ({
+                                                            ...prev,
+                                                            questionSource: null,
+                                                        }));
+                                                }}
+                                                options={activeTabData.formData.QuestionSource || []}
+                                                // optionLabel="id"
+                                                //This optionValue is used to get id and id go in to the array ..
+                                                optionValue="id"
+                                                filter
+                                                filterDelay={400}
+                                                placeholder="Questions Source"
+                                                className="w-full md:w-20rem text-gray-600"
+                                            />
                                         </div>
-                                        <div className="mb-4">
-                                            <select className="w-full border rounded-lg px-3 py-2 text-sm text-gray-700 shadow-sm focus:ring-2 focus:ring-[#26169a] focus:outline-none">
-                                                <option value="">Author</option>
-                                                <option value="option1">author 1</option>
-                                                <option value="option2">author 2 </option>
+
+                                        <div className="mb-4 relative">
+                                            <MultiSelect
+                                                value={activeTabData.formData.subTopics || []}
+                                                onChange={(e) => {
+                                                    const val = Array.isArray(e.value) ? e.value : [];
+                                                    handleInputChange(activeTabData.id, "subTopics", val);
+                                                    // fetch first page
+                                                    const rows =
+                                                        activeTabData.formData.questionsRows || 10;
+                                                    handleCourseData(val, activeTabData.id, 0, rows);
+                                                    if (errors.questionSource)
+                                                        setErrors((prev) => ({
+                                                            ...prev,
+                                                            questionSource: null,
+                                                        }));
+                                                }}
+                                                options={subTpoics}
+                                                optionLabel="title"
+                                                //This optionValue is used to get id and id go in to the array ..
+                                                optionValue="id"
+                                                filter
+                                                filterDelay={400}
+                                                placeholder="Select Sub Topics"
+                                                className="w-full absolute  text-gray-600"
+                                            />
+                                        </div>
+                                        <div className="mb-4 relative">
+                                            <select
+                                                value={activeTabData.formData.contributors || " "}
+                                                onChange={(e) => {
+                                                    handleInputChange(
+                                                        activeTabData.id,
+                                                        "contributors",
+                                                        e.target.value
+                                                    );
+                                                    console.log("ID OF CONTRIBUTOR IS", e.target.value);
+                                                }}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm text-gray-700 shadow-sm focus:ring-2 focus:ring-[#26169a] focus:outline-none"
+                                            >
+                                                <option value="">Authors</option>
+                                                {contributors.map((contributor, index) => (
+                                                    <option key={index} value={contributor.id}>
+                                                        {contributor.name}
+                                                    </option>
+                                                ))}
                                             </select>
+
                                         </div>
                                         {/* Footer buttons */}
                                         <div className="flex justify-between items-center">
@@ -1489,7 +1597,16 @@ function TestDnd() {
                                             </button>
                                             <button
                                                 className="bg-[#26a69a] text-white px-4 py-2 rounded-lg text-sm font-medium shadow hover:bg-[#0a5a52]"
-                                                onClick={handleContributer}
+                                                onClick={() => {
+                                                    const rows =
+                                                        activeTabData.formData.questionsRows || 10;
+                                                    handleCourseData(activeTabData?.formData?.QuestionSource, activeTabData.id, 0, rows, activeTabData.formData.contributors,);
+                                                    console.log("Apply clicked")
+
+
+                                                }
+
+                                                }
                                             >
                                                 Apply
                                             </button>
